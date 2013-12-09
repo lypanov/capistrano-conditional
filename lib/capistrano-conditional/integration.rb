@@ -10,15 +10,14 @@ Capistrano::Configuration.instance(:must_exist).load do
   namespace :conditional do
     desc "Initializes the conditional deployment functionality"
     task :apply do
-      deployed_hash = capture("cat #{current_path}/REVISION").strip
+      deployed_hash = capture("cd #{current_path}; git log --format=format:%H -n 1", :pty => false).strip
       ConditionalDeploy.apply_conditions!( deployed_hash )
     end
     
     desc "Tests to be sure that the newest local and remote git commits match"
     task :ensure_latest_git do
-      remote = capture("cd #{shared_path}/cached-copy && git log --format=oneline -n 1", :pty => false)
-      local = run_locally("git log --format=oneline -n 1")
-      
+      remote = capture("cd #{current_path}; git log --format=oneline -n 1", :pty => false).strip
+      local = run_locally("git log --format=oneline -n 1").strip
       unless local == remote
         abort("\nLocal and remote git repositories have different HEADs:\n    Local: #{local}    Remote: #{remote}\n    Make sure you've committed your latest changes, or else pull down the remote updates and try again\n")
       end
